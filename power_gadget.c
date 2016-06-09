@@ -47,24 +47,27 @@ double duration = 360000.0;
 double delay_unit = 1000000.0;
 
 double get_rapl_energy_info(uint64_t power_domain, uint64_t node) {
-  int err;
+
   double total_energy_consumed;
 
   switch (power_domain) {
   case PKG:
-    err = get_pkg_total_energy_consumed(node, &total_energy_consumed);
+    get_pkg_total_energy_consumed(node, &total_energy_consumed);
     break;
+
   case PP0:
-    err = get_pp0_total_energy_consumed(node, &total_energy_consumed);
+    get_pp0_total_energy_consumed(node, &total_energy_consumed);
     break;
+
   case PP1:
-    err = get_pp1_total_energy_consumed(node, &total_energy_consumed);
+    get_pp1_total_energy_consumed(node, &total_energy_consumed);
     break;
+
   case DRAM:
-    err = get_dram_total_energy_consumed(node, &total_energy_consumed);
+    get_dram_total_energy_consumed(node, &total_energy_consumed);
     break;
+
   default:
-    err = MY_ERROR;
     break;
   }
 
@@ -96,16 +99,12 @@ void do_print_energy_info() {
   uint64_t node = 0;
   double new_sample;
   double delta;
-  double power;
 
   double prev_sample[num_node][RAPL_NR_DOMAIN];
   double power_watt[num_node][RAPL_NR_DOMAIN];
-  double cum_energy_J[num_node][RAPL_NR_DOMAIN];
-  double cum_energy_mWh[num_node][RAPL_NR_DOMAIN];
 
   char time_buffer[32];
   struct timeval tv;
-  int msec;
   uint64_t tsc;
   uint64_t freq;
   double start, end, interval_start;
@@ -116,26 +115,25 @@ void do_print_energy_info() {
   setbuf(stdout, NULL);
 
   /* Print header */
-  fprintf(stdout, "System Time,RDTSC,Elapsed Time (sec),");
+  fprintf(stdout, "System Time,Elapsed Time (sec),");
   for (i = node; i < num_node; i++) {
     fprintf(stdout, "IA Frequency_%d (MHz),", i);
-    if (is_supported_domain(RAPL_PKG))
-      fprintf(stdout, "Processor Power_%d (Watt),Cumulative Processor "
-                      "Energy_%d (Joules),Cumulative Processor Energy_%d "
-                      "(mWh),",
-              i, i, i);
-    if (is_supported_domain(RAPL_PP0))
-      fprintf(stdout, "IA Power_%d (Watt),Cumulative IA Energy_%d "
-                      "(Joules),Cumulative IA Energy_%d(mWh),",
-              i, i, i);
-    if (is_supported_domain(RAPL_PP1))
-      fprintf(stdout, "GT Power_%d (Watt),Cumulative GT Energy_%d "
-                      "(Joules),Cumulative GT Energy_%d(mWh)",
-              i, i, i);
-    if (is_supported_domain(RAPL_DRAM))
-      fprintf(stdout, "DRAM Power_%d (Watt),Cumulative DRAM Energy_%d "
-                      "(Joules),Cumulative DRAM Energy_%d(mWh),",
-              i, i, i);
+
+    if (is_supported_domain(RAPL_PKG)){
+      fprintf(stdout, "Processor Power_%d (Watt),", i);
+    }
+
+    if (is_supported_domain(RAPL_PP0)){
+      fprintf(stdout, "IA Power_%d (Watt),", i);
+    }
+
+    if (is_supported_domain(RAPL_PP1)){
+      fprintf(stdout, "GT Power_%d (Watt),", i);
+    }
+
+    if (is_supported_domain(RAPL_DRAM)){
+      fprintf(stdout, "DRAM Power_%d (Watt),",i);
+    }
   }
   fprintf(stdout, "\n");
 
@@ -178,8 +176,6 @@ void do_print_energy_info() {
           // just the sleep delay, in order to more accourately account for
           // the delay between samples
           power_watt[i][domain] = delta / interval_elapsed_time;
-          cum_energy_J[i][domain] += delta;
-          cum_energy_mWh[i][domain] = cum_energy_J[i][domain] / 3.6; // mWh
         }
       }
     }
@@ -190,62 +186,29 @@ void do_print_energy_info() {
     convert_time_to_string(tv, time_buffer);
 
     read_tsc(&tsc);
-    fprintf(stdout, "%s,%lu,%.4lf,", time_buffer, tsc, total_elapsed_time);
+    fprintf(stdout, "%s,%.4lf,", time_buffer, total_elapsed_time);
+
     for (i = node; i < num_node; i++) {
       get_pp0_freq_mhz(i, &freq);
       fprintf(stdout, "%lu,", freq);
+
       for (domain = 0; domain < RAPL_NR_DOMAIN; ++domain) {
         if (is_supported_domain(domain)) {
-          fprintf(stdout, "%.4lf,%.4lf,%.4lf,", power_watt[i][domain],
-                  cum_energy_J[i][domain], cum_energy_mWh[i][domain]);
+          fprintf(stdout, "%.4lf,", power_watt[i][domain]);
         }
       }
     }
+
     fprintf(stdout, "\n");
 
     // check to see if we are done
-    if (total_elapsed_time >= duration)
+    if (total_elapsed_time >= duration){
       break;
+    }
   }
 
   end = clock();
 
-  /* Print summary */
-  fprintf(stdout, "\nTotal Elapsed Time(sec)=%.4lf\n\n", total_elapsed_time);
-  for (i = node; i < num_node; i++) {
-    if (is_supported_domain(RAPL_PKG)) {
-      fprintf(stdout, "Total Processor Energy_%d(Joules)=%.4lf\n", i,
-              cum_energy_J[i][RAPL_PKG]);
-      fprintf(stdout, "Total Processor Energy_%d(mWh)=%.4lf\n", i,
-              cum_energy_mWh[i][RAPL_PKG]);
-      fprintf(stdout, "Average Processor Power_%d(Watt)=%.4lf\n\n", i,
-              cum_energy_J[i][RAPL_PKG] / total_elapsed_time);
-    }
-    if (is_supported_domain(RAPL_PP0)) {
-      fprintf(stdout, "Total IA Energy_%d(Joules)=%.4lf\n", i,
-              cum_energy_J[i][RAPL_PP0]);
-      fprintf(stdout, "Total IA Energy_%d(mWh)=%.4lf\n", i,
-              cum_energy_mWh[i][RAPL_PP0]);
-      fprintf(stdout, "Average IA Power_%d(Watt)=%.4lf\n\n", i,
-              cum_energy_J[i][RAPL_PP0] / total_elapsed_time);
-    }
-    if (is_supported_domain(RAPL_PP1)) {
-      fprintf(stdout, "Total GT Energy_%d(Joules)=%.4lf\n", i,
-              cum_energy_J[i][RAPL_PP1]);
-      fprintf(stdout, "Total GT Energy_%d(mWh)=%.4lf\n", i,
-              cum_energy_mWh[i][RAPL_PP1]);
-      fprintf(stdout, "Average GT Power_%d(Watt)=%.4lf\n\n", i,
-              cum_energy_J[i][RAPL_PP1] / total_elapsed_time);
-    }
-    if (is_supported_domain(RAPL_DRAM)) {
-      fprintf(stdout, "Total DRAM Energy_%d(Joules)=%.4lf\n", i,
-              cum_energy_J[i][RAPL_DRAM]);
-      fprintf(stdout, "Total DRAM Energy_%d(mWh)=%.4lf\n", i,
-              cum_energy_mWh[i][RAPL_DRAM]);
-      fprintf(stdout, "Average DRAM Power_%d(Watt)=%.4lf\n\n", i,
-              cum_energy_J[i][RAPL_DRAM] / total_elapsed_time);
-    }
-  }
   read_tsc(&tsc);
   fprintf(stdout, "TSC=%lu\n", tsc);
 }
@@ -264,9 +227,8 @@ int cmdline(int argc, char **argv) {
   int opt;
   uint64_t delay_ms_temp = 1000;
 
-  progname = argv[0];
-
   while ((opt = getopt(argc, argv, "e:d:")) != -1) {
+
     switch (opt) {
     case 'e':
       delay_ms_temp = atoi(optarg);
@@ -277,6 +239,7 @@ int cmdline(int argc, char **argv) {
         return -1;
       }
       break;
+
     case 'd':
       duration = atof(optarg);
       if (duration <= 0.0) {
@@ -284,10 +247,12 @@ int cmdline(int argc, char **argv) {
         return -1;
       }
       break;
+
     case 'h':
       usage();
       exit(0);
       break;
+
     default:
       usage();
       return -1;
@@ -302,7 +267,8 @@ void sigint_handler(int signum) {
 }
 
 int main(int argc, char **argv) {
-  int i = 0;
+  progname = argv[0];
+
   int ret = 0;
 
   /* Clean up if we're told to exit */

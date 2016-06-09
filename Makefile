@@ -1,4 +1,4 @@
-CFLAGS=-g
+CFLAGS=-g -Wall
 
 all: rapl_lib_shared rapl_lib_static power_gadget_static
 
