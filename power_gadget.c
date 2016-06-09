@@ -40,7 +40,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "rapl.h"
 
 char *progname;
-const char *version = "2.2";
+const char *version = "2.5";
 uint64_t num_node = 0;
 uint64_t delay_us = 1000000;
 double duration = 360000.0;
