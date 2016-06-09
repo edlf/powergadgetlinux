@@ -1,4 +1,4 @@
-Intel(r) Power Gadget    {#mainpage}
+Intel(r) Power Gadget (unofficial fork)
 =======================
 
 Intel(r) Power Gadget is a software utility and library, which allows developers 
@@ -43,4 +43,13 @@ VR (voltage regulator) mode of power estimation. The accuracy of this mode
 is highly dependent on the OEM platform. For Intel reference platforms the 
 accuracy of DRAM power estimation may produce up to ~30% error. 
 
- 
+Modifications
+-----------------------------------
+
+- Remove all cumulative calculations (some were wrong) since this is used
+only to log the values, all further calculations should be done on a spreadsheet.
+- Removed RDTSC value since *I* have no need for it.
+- Fixed some warnings.
+- Remove the requirement for input parameters (they still work normally).
+- Increased the default logging limit from 3600 to 360000.
+- Pure CSV output.
