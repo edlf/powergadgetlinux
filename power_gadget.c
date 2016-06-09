@@ -105,7 +105,6 @@ void do_print_energy_info() {
 
   char time_buffer[32];
   struct timeval tv;
-  uint64_t tsc;
   uint64_t freq;
   double start, end, interval_start;
   double total_elapsed_time;
@@ -185,7 +184,6 @@ void do_print_energy_info() {
     total_elapsed_time = end - start;
     convert_time_to_string(tv, time_buffer);
 
-    read_tsc(&tsc);
     fprintf(stdout, "%s,%.4lf,", time_buffer, total_elapsed_time);
 
     for (i = node; i < num_node; i++) {
@@ -208,9 +206,6 @@ void do_print_energy_info() {
   }
 
   end = clock();
-
-  read_tsc(&tsc);
-  fprintf(stdout, "TSC=%lu\n", tsc);
 }
 
 void usage() {
