@@ -1,0 +1,10 @@
+# Nano outputs
+*.swp
+
+# Object files + libs
+*.o
+*.a
+*.so
+
+# Binnary output
+power_gadget
